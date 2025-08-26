@@ -10,9 +10,11 @@ const firebaseConfig = {
   measurementId: "G-SVX0TXGMX3"
 };
 
+
 // Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 const dbURL = firebaseConfig.databaseURL;
+
 
 // Password hashing function
 async function hashPassword(password) {
@@ -22,6 +24,7 @@ async function hashPassword(password) {
     const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
     return hashHex;
 }
+
 
 // Admin login (from your admins node)
 async function handleLogin(e) {
@@ -61,12 +64,14 @@ async function handleLogin(e) {
     }
 }
 
+
 // Logout
 function handleLogout() {
     document.getElementById("loginSection").classList.remove("d-none");
     document.getElementById("dashboardSection").classList.add("d-none");
     document.getElementById("tableBody").innerHTML = "";
 }
+
 
 // Fetch students from Realtime Database
 async function fetchStudents() {
@@ -107,13 +112,23 @@ async function fetchStudents() {
                 <td>${s.sscYear || ""}</td>
                 <td>${s.location || ""}</td>
                 <td>${s.timestamp || ""}</td>
-                <td>-</td>
+                <td>
+                <button class="btn btn-primary" onclick="editStudent('${key}')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                    <i class="bi bi-pencil"></i>
+                </button>
+                <button class="btn btn-danger" onclick="deleteStudent('${key}')" style="font-size: 0.75rem; padding: 0.25rem 0.5rem;">
+                    <i class="bi bi-trash"></i>
+                </button>
+            </td>
+
             `;
+
             tableBody.appendChild(row);
             count++;
 
             // Stats calculation
             if(s.sscYear == new Date().getFullYear()) currentYearCount++;
+            console.log(s.sscYear, new Date().getFullYear());
             if(s.timestamp && s.timestamp.slice(0,10) === todayDate) todayCount++;
             if(s.phone) phoneSet.add(s.phone);
         }
@@ -129,7 +144,6 @@ async function fetchStudents() {
         console.error("Error fetching students:", err);
     }
 }
-
 
 
 // Export to Excel
@@ -148,7 +162,6 @@ function exportData() {
 }
 
 
-// Search functionality
 // Search functionality (updated)
 document.getElementById("searchInput").addEventListener("input", function() {
     const query = this.value.toLowerCase();
@@ -174,6 +187,91 @@ document.getElementById("searchInput").addEventListener("input", function() {
     }
 
     document.getElementById("recordCount").innerText = `${visibleCount} records`;
+});
+
+
+let currentEditId = null;
+let currentDeleteId = null;
+
+
+// Show edit modal
+async function editStudent(studentId) {
+    currentEditId = studentId;
+    const res = await fetch(`${dbURL}/students/${studentId}.json`);
+    const student = await res.json();
+
+    if(!student) return alert("Student not found!");
+
+    // Fill form
+    document.getElementById("editStudentId").value = studentId;
+    document.getElementById("editName").value = student.name || "";
+    document.getElementById("editSchool").value = student.school || "";
+    document.getElementById("editPhone").value = student.phone || "";
+    document.getElementById("editSSCYear").value = student.sscYear || "";
+    document.getElementById("editLocation").value = student.location || "";
+
+    // Show modal
+    const editModal = new bootstrap.Modal(document.getElementById('editStudentModal'));
+    editModal.show();
+}
+
+
+// Handle update form submission
+document.getElementById("editStudentForm").addEventListener("submit", async function(e){
+    e.preventDefault();
+    const studentId = document.getElementById("editStudentId").value;
+
+    const updatedStudent = {
+        name: document.getElementById("editName").value,
+        school: document.getElementById("editSchool").value,
+        phone: document.getElementById("editPhone").value,
+        sscYear: document.getElementById("editSSCYear").value,
+        location: document.getElementById("editLocation").value
+    };
+
+    try {
+    await fetch(`${dbURL}/students/${studentId}.json`, {
+        method: 'PATCH',  // PUT-এর জায়গায় PATCH
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            name: document.getElementById("editName").value,
+            school: document.getElementById("editSchool").value,
+            phone: document.getElementById("editPhone").value,
+            sscYear: document.getElementById("editSSCYear").value,
+            location: document.getElementById("editLocation").value
+        })
+    });
+
+    bootstrap.Modal.getInstance(document.getElementById('editStudentModal')).hide();
+    fetchStudents();
+    // alert("Student updated successfully!");
+    } catch(err) {
+        console.error(err);
+        alert("Failed to update student.");
+    }
+});
+
+
+// Show delete confirmation modal
+function deleteStudent(studentId) {
+    currentDeleteId = studentId;
+    const deleteModal = new bootstrap.Modal(document.getElementById('deleteStudentModal'));
+    deleteModal.show();
+}
+
+
+// Confirm delete
+document.getElementById("confirmDeleteBtn").addEventListener("click", async function(){
+    if(!currentDeleteId) return;
+    try {
+        await fetch(`${dbURL}/students/${currentDeleteId}.json`, { method: 'DELETE' });
+        bootstrap.Modal.getInstance(document.getElementById('deleteStudentModal')).hide();
+        fetchStudents();
+        // alert("Student deleted successfully!");
+    } catch(err) {
+        console.error(err);
+        alert("Failed to delete student.");
+    }
 });
 
 
