@@ -471,9 +471,9 @@
 
           <div class="mb-4">
             <label class="form-label">
-              <i class="fas fa-map-marker-alt"></i>District
+              <i class="fas fa-phone"></i>Phone Number
             </label>
-            <input type="text" class="form-control" id="district" placeholder="Enter district name" required>
+            <input type="tel" class="form-control" id="phone" placeholder="Enter phone number" required>
           </div>
 
           <div class="mb-4">
@@ -594,7 +594,7 @@
 
       const name = document.getElementById("name").value;
       const school = document.getElementById("school").value;
-      const district = document.getElementById("district").value;
+      const phone = document.getElementById("phone").value;
       const sscYear = document.getElementById("sscYear").value;
       const location = document.getElementById("location").value;
 
@@ -602,7 +602,7 @@
       const newStudentRef = push(dbRef);
 
       set(newStudentRef, {
-        name, school, district, sscYear, location,
+        name, school, phone, sscYear, location,
         timestamp: new Date().toISOString()
       })
       .then(() => {

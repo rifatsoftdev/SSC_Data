@@ -82,7 +82,7 @@ async function fetchStudents() {
             document.getElementById("recordCount").innerText = "0 records";
             document.getElementById("totalRecords").innerText = "0";
             document.getElementById("currentYearRecords").innerText = "0";
-            document.getElementById("uniqueDistricts").innerText = "0";
+            document.getElementById("uniquePhones").innerText = "0";
             document.getElementById("todayRecords").innerText = "0";
             return;
         } else {
@@ -92,7 +92,7 @@ async function fetchStudents() {
         let count = 0;
         let currentYearCount = 0;
         let todayCount = 0;
-        let districtsSet = new Set();
+        let phoneSet = new Set();
 
         const todayDate = new Date().toISOString().slice(0,10); // YYYY-MM-DD
 
@@ -103,10 +103,9 @@ async function fetchStudents() {
             row.innerHTML = `
                 <td>${s.name || ""}</td>
                 <td>${s.school || ""}</td>
-                <td>${s.district || ""}</td>
+                <td>${s.phone || ""}</td>
                 <td>${s.sscYear || ""}</td>
                 <td>${s.location || ""}</td>
-                <td>${s.notes || ""}</td>
                 <td>${s.timestamp || ""}</td>
                 <td>-</td>
             `;
@@ -116,20 +115,21 @@ async function fetchStudents() {
             // Stats calculation
             if(s.sscYear == new Date().getFullYear()) currentYearCount++;
             if(s.timestamp && s.timestamp.slice(0,10) === todayDate) todayCount++;
-            if(s.district) districtsSet.add(s.district);
+            if(s.phone) phoneSet.add(s.phone);
         }
 
         // Update statistics cards
         document.getElementById("recordCount").innerText = `${count} records`;
         document.getElementById("totalRecords").innerText = count;
         document.getElementById("currentYearRecords").innerText = currentYearCount;
-        document.getElementById("uniqueDistricts").innerText = districtsSet.size;
+        document.getElementById("uniquePhones").innerText = phoneSet.size;
         document.getElementById("todayRecords").innerText = todayCount;
 
     } catch(err){
         console.error("Error fetching students:", err);
     }
 }
+
 
 
 // Export to Excel
@@ -146,6 +146,35 @@ function exportData() {
     // Generate Excel file and trigger download
     XLSX.writeFile(wb, `students_${new Date().toISOString().slice(0,10)}.xlsx`);
 }
+
+
+// Search functionality
+// Search functionality (updated)
+document.getElementById("searchInput").addEventListener("input", function() {
+    const query = this.value.toLowerCase();
+    const tableBody = document.getElementById("tableBody");
+    const rows = tableBody.getElementsByTagName("tr");
+
+    let visibleCount = 0;
+
+    for (let row of rows) {
+        const cells = row.getElementsByTagName("td");
+        const name = cells[0].innerText.toLowerCase();
+        const school = cells[1].innerText.toLowerCase();
+        const phone = cells[2].innerText.toLowerCase();
+        const sscYear = cells[3].innerText.toLowerCase();
+        const address = cells[4].innerText.toLowerCase();
+
+        if (name.includes(query) || school.includes(query) || phone.includes(query) || sscYear.includes(query) || address.includes(query)) {
+            row.style.display = "";
+            visibleCount++;
+        } else {
+            row.style.display = "none";
+        }
+    }
+
+    document.getElementById("recordCount").innerText = `${visibleCount} records`;
+});
 
 
 // Refresh Button
